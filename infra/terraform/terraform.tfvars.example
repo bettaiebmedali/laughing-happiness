@@ -1,0 +1,6 @@
+aws_region    = "eu-west-1"
+admin_cidr    = "203.0.113.10/32" # Replace with your real public IP/32
+app_cidr      = "203.0.113.10/32" # Restrict access; do not leave public unless intentional
+key_name      = "your-existing-ec2-keypair"
+ami_id        = "ami-REPLACE-WITH-VALID-AMI"
+instance_type = "t3.micro"

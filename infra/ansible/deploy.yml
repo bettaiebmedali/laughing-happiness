@@ -1,0 +1,53 @@
+---
+- name: Configure EC2 and deploy the Python API container
+  hosts: all
+  become: true
+  vars:
+    docker_image: "{{ docker_image | default('docker.io/library/python:3.12-slim') }}"
+    container_name: python-devops-demo
+    app_port: 8000
+
+  tasks:
+    - name: Install Docker on Amazon Linux 2023
+      ansible.builtin.dnf:
+        name: docker
+        state: present
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Install Docker on Ubuntu
+      block:
+        - name: Install prerequisites
+          ansible.builtin.apt:
+            name: [ca-certificates, curl]
+            state: present
+            update_cache: true
+        - name: Install Docker engine package
+          ansible.builtin.apt:
+            name: docker.io
+            state: present
+      when: ansible_facts['distribution'] == 'Ubuntu'
+
+    - name: Enable and start Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Pull application image
+      community.docker.docker_image:
+        name: "{{ docker_image }}"
+        source: pull
+
+    - name: Run application container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ docker_image }}"
+        state: started
+        restart_policy: always
+        published_ports:
+          - "{{ app_port }}:8000"
+        healthcheck:
+          test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+          interval: 30s
+          timeout: 5s
+          retries: 3
