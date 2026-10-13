@@ -123,3 +123,44 @@ Ne laissez pas `terraform.tfvars`, les clés privées ou les fichiers d'état Te
 - Les scans Trivy sont configurés pour échouer sur les vulnérabilités `CRITICAL`; ajuster la politique après analyse.
 - Ajouter un registre de secrets, SBOM/CycloneDX, signature d'image (cosign), politiques OPA, approbation de production,
   sauvegardes, TLS/ALB, monitoring, alerting et stratégie de rollback avant production.
+
+
+
+
+
+debug
+2. Corriger durablement la commande pytest
+Pour que la pipeline Jenkins utilise une commande fiable, conserve cette forme :
+python -m pytest --cov=app --cov-report=term --cov-report=xml:coverage.xml
+
+
+Tu peux aussi lancer séparément les tests unitaires et d'intégration :
+python -m pytest tests/test_unit.py -v
+python -m pytest tests/test_integration.py -v
+
+
+3. Continuer la validation de la chaîne DevOps
+Exécute maintenant les étapes suivantes, dans cet ordre.
+Étape A — Qualité du code
+ruff check app tests
+
+
+Étape B — Mettre à jour Bandit
+python -m pip install --upgrade bandit
+bandit -r app -ll
+
+
+Étape C — Vérifier les dépendances vulnérables
+python -m pip check
+pip-audit -r requirements.txt
+
+
+Le résultat précédent de pip-audit signalait plusieurs vulnérabilités de Starlette : il faudra les résoudre avant de considérer la validation de sécurité comme réussie.
+Étape D — Tester Docker
+docker version
+docker build -t python-devops-demo:local .
+
+
+Si le build réussit :
+docker run -d --name python-devops-demo -p 8000:8000 python-devops-demo:local
+curl http://localhost:8000/health
